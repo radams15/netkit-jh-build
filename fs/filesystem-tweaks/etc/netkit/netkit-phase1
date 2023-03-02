@@ -171,6 +171,20 @@ case $1 in
          echo "Running 'resolvconf -u' to generate '/etc/resolv.conf'"
          resolvconf -u
 
+         global_shared_files=( "/hosthome/netkit-jh/shared/"* )
+         if [ -e "${global_shared_files[0]}" ]; then
+            echo "Copying shared files from '/hosthome/netkit-jh/shared/'"
+            # Copy shared files without following symbolic links. Ignore file
+            # ownership.
+			   cp \
+               --recursive \
+               --no-preserve ownership \
+               --no-dereference \
+               --preserve=links \
+               --target-directory / \
+               -- "${global_shared_files[@]}"
+         fi
+
          # File check avoids need to set the nullglob shell option
          shared_files=( "/hostlab/shared/"* )
          if [ -e "${shared_files[0]}" ]; then
