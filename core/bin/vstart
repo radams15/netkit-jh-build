@@ -196,6 +196,8 @@ END_OF_HELP
    exit "$status"
 }
 
+MAX_CONS=7
+
 
 ###############################################################################
 # Check for invalid characters in filepaths for the ubd argument (set with the
@@ -371,7 +373,7 @@ for i in $(seq 0 $MAX_INTERFACES); do
    long_opts="$long_opts,eth$i:"
 done
 
-for i in $(seq 0 $MAX_INTERFACES); do
+for i in $(seq 0 $MAX_CONS); do
    long_opts="$long_opts,con$i:"
 done
 
@@ -383,7 +385,7 @@ fi
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$getopt_opts"
 
-VM_CONS=()
+VM_CONS=(this none none none none none none none)
 
 while true; do
    case $1 in
@@ -398,7 +400,8 @@ while true; do
 
          case $console in
             xterm|this|tmux|pty|port:*|none)
-               [ "$opt" = "--con0" ] && VM_CON0=$console || VM_CONS=("${VM_CONS[@]}" $console)
+               con_id=$(echo "$opt" | sed 's/--con//g')
+               VM_CONS[$con_id]=$console
                ;;
             *)
                error "'$console' is an invalid console type"
@@ -674,6 +677,7 @@ trap "rm --force -- '$out_file'" EXIT
    ### CONSOLES ###############################################################
    # NOTE: "xterm" maps to "this" for con0 because of the previously used
    # port-helper option.
+   VM_CON0=${VM_CONS[0]}
    case $VM_CON0 in
       none)       kernel_cmd+=( "con0=null" );;
       this|xterm) kernel_cmd+=( "con0=fd:0,fd:1" );;
@@ -683,11 +687,15 @@ trap "rm --force -- '$out_file'" EXIT
       tmux)       kernel_cmd_append+=( "tmux" );;
    esac
 
-   i=1
-   for CON in "${VM_CONS[@]}"
+   for i in $(seq 1 7)
    do
-   	kernel_cmd+=( "con$i=$CON" )
-   	((i++))
+        con=${VM_CONS[$i]}
+        case $con in
+           none)       kernel_cmd+=( "con$i=null" );;
+           this|xterm) kernel_cmd+=( "con$i=fd:0,fd:1" );;
+           pty)        kernel_cmd+=( "con$i=pty" );;
+           port:*)     kernel_cmd+=( "con$i=$con" );;
+        esac
    done
 
 
