@@ -361,7 +361,7 @@ log_write "$0 $*"
 
 
 # Get command line options
-long_opts="append:,con0:,con1:,debug,dry-run,exec:,filesystem:,foreground,\
+long_opts="append:,debug,dry-run,exec:,filesystem:,foreground,\
 help,hide-disk-file,hostlab:,just-print,kernel:,mem:,model-fs:,mount:,no-cow,\
 no-hosthome,print,recon,show-boot-log,test:,tmux-attached,tmux-detached,\
 verbose,version,xterm:"
@@ -369,6 +369,10 @@ short_opts="De:Ff:Hk:Ll:M:m:nvWw:"
 
 for i in $(seq 0 $MAX_INTERFACES); do
    long_opts="$long_opts,eth$i:"
+done
+
+for i in $(seq 0 $MAX_INTERFACES); do
+   long_opts="$long_opts,con$i:"
 done
 
 if ! getopt_opts=$(getopt --name "$SCRIPTNAME" --options "$short_opts" --longoptions "$long_opts" -- "$@"); then
@@ -379,20 +383,22 @@ fi
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$getopt_opts"
 
+VM_CONS=()
+
 while true; do
    case $1 in
       --append)
          kernel_cmd_append+=( "$2" )
          shift
          ;;
-      --con0|--con1)
+      --con*)
          opt=$1
          console=$2
          shift
 
          case $console in
             xterm|this|tmux|pty|port:*|none)
-               [ "$opt" = "--con0" ] && VM_CON0=$console || VM_CON1=$console
+               [ "$opt" = "--con0" ] && VM_CON0=$console || VM_CONS=("${VM_CONS[@]}" $console)
                ;;
             *)
                error "'$console' is an invalid console type"
@@ -677,13 +683,12 @@ trap "rm --force -- '$out_file'" EXIT
       tmux)       kernel_cmd_append+=( "tmux" );;
    esac
 
-   case $VM_CON1 in
-      none)    kernel_cmd+=( "con1=null" );;
-      xterm)   kernel_cmd+=( "con1=xterm" );;
-      this)    kernel_cmd+=( "con1=fd:0,fd:1" );;
-      pty)     kernel_cmd+=( "con1=pty" );;
-      port:*)  kernel_cmd+=( "con1=$VM_CON1" );;
-   esac
+   i=1
+   for CON in "${VM_CONS[@]}"
+   do
+   	kernel_cmd+=( "con$i=$CON" )
+   	((i++))
+   done
 
 
    ### CREATE "PROPER" TERMINAL EMULATOR ######################################
