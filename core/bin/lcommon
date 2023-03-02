@@ -239,7 +239,10 @@ lab_crash() {
       bold_print "Crashing '$vhost'..."
       "$NETKIT_HOME/bin/vcrash" "${vcrash_args[@]}" -- "$vhost" &&
          rm ${verbose:+"--verbose"} --force -- "$lab_dir/$vhost.ready"
+         
+      rm "$HOME/.netkit/machines/$vhost/port.tty*"
    done
+  
 
    bold_print "Removing readyfor.test..."
    rm --force -- "$lab_dir/readyfor.test"

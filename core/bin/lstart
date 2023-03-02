@@ -153,6 +153,7 @@ END_OF_HELP
 #   $3 - set to 1 for verbose mode, empty string otherwise
 #   $4 - used internally when lstart is invoked with Make
 #   $5 - lab directory
+#   $6 - port increment start
 #  ... - array of options to pass through into vstart
 ###############################################################################
 lab_start() {
@@ -161,7 +162,8 @@ lab_start() {
    local verbose=$3
    local makefile=$4
    local lab_dir=$5
-   local passthrough_args=( "${@:6}" )
+   local port_start=$6
+   local passthrough_args=( "${@:7}" )
 
    local vhost
 
@@ -175,7 +177,7 @@ lab_start() {
    [ -n "$test_delay" ] && passthrough_args+=( "--test=$test_delay" )
 
    for vhost in "${lab_vhosts[@]}"; do
-      single_lab_vhost_start "$fast_mode" "$verbose" "$lab_dir" "$vhost" "${passthrough_args[@]}"
+      single_lab_vhost_start "$fast_mode" "$verbose" "$lab_dir" "$vhost" "$port_start" "${passthrough_args[@]}"
    done
 
    # The readyfor.test file should not be created if lstart has been invoked
@@ -193,6 +195,7 @@ lab_start() {
 #   $2 - set to 1 for verbose mode, empty string otherwise
 #   $3 - lab directory
 #   $4 - machine to start up
+#   $5 - port increment start
 #  ... - options to passthrough to vstart (appended on)
 ###############################################################################
 single_lab_vhost_start() {
@@ -200,7 +203,8 @@ single_lab_vhost_start() {
    local verbose=$2
    local lab_dir=$3
    local vhost=$4
-   local passthrough_args=( "${@:5}" )
+   local port_start=$5
+   local passthrough_args=( "${@:6}" )
 
    local line_number
    local configuration opt value
@@ -255,14 +259,21 @@ single_lab_vhost_start() {
          fi
       done < <(grep --line-number -- "^$vhost\[.*\]" "$lab_conf")
    fi
+   
+   for port_add in $(seq 1 6)
+   do
+       port=$(($port_start+$port_add))
+       echo "$vhost con$port_add = $port"
+       vstart_args+=( "--con$port_add=port:$port" )
+   done
 
    # Remove .ready file, if existing
    rm --force -- "$lab_dir/$vhost.ready"
 
    # If the machine fails to start, we ignore it (vstart would have provided an
-   # error message already).
+   # error message already).   
    "$NETKIT_HOME/bin/vstart" "${vstart_args[@]}" "${passthrough_args[@]}" -- "$vhost" || return 0
-
+   
    # Wait for virtual host startup script to create .ready file
    if [ -z "$fast_mode" ]; then
       while [ ! -e "$lab_dir/$vhost.ready" ]; do
@@ -271,6 +282,13 @@ single_lab_vhost_start() {
 
       rm --force -- "$lab_dir/$vhost.ready"
    fi
+   
+   for port_add in $(seq 1 6)
+   do
+       port=$(($port_start+$port_add))
+       echo "$port" > "$HOME/.netkit/machines/$vhost/port.tty$port_add"
+   done
+
 
    # Wait for a specified amount of time before returning
    [ "$GRACE_TIME" -gt 0 ] && sleep -- "$GRACE_TIME"
@@ -287,13 +305,15 @@ single_lab_vhost_start() {
 #   $1 - set to non-zero length string for test mode, empty string otherwise
 #   $2 - test delay as an argument to sleep, empty string otherwise
 #   $3 - lab directory
+#   $4 - port start, incremented by 1000 per lab
 #  ... - array of options to pass through into vstart
 ###############################################################################
 lab_start_parallel() {
    local test_delay=$1
    local verbose=$2
    local lab_dir=$3
-   local passthrough_args=( "${@:4}" )
+   local port_start=$4
+   local passthrough_args=( "${@:5}" )
 
    local lstart_args arg
    local line target prerequisite prerequisites
@@ -362,7 +382,6 @@ lab_start_parallel() {
       dependencies[$target]+=""
    done
 
-
    lstart_cmd=( "$program_name" "-d" "$lab_dir" "--makefile" "${lstart_args[@]}" )
 
    # We expand this array with the Q operator when writing to the Makefile.
@@ -406,11 +425,12 @@ EOF
    # relevant.
    for target in "${!dependencies[@]}"; do
       makefile_contents+="$target: ${dependencies[$target]}
-$tab$escaped_lstart_cmd '$target'
+$tab$escaped_lstart_cmd --port-start '$port_start' '$target'
 
 "
-   done
 
+      port_start=$(($port_start+10))
+   done
 
    # Read the Makefile from stdin without implicit rules, and hide the output.
    # It is parallelised to the MAX_SIMULTANEOUS_VMS configuration option.
@@ -585,8 +605,8 @@ log_write "$0 $*"
 
 # Get command line options
 long_opts="force-lab,help,list,makefile,pass:,sequential,tmux-attached,\
-tmux-detached,verbose,version,wait:"
-short_opts="d:Flo:p::svw:"
+tmux-detached,verbose,version,wait:,port-start:"
+short_opts="d:Flo:p::svw:r:"
 
 if [ "$SCRIPTNAME" = "lstart" ]; then
    long_opts+=",fast"
@@ -602,6 +622,8 @@ fi
 
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$getopt_opts"
+
+port_start=5000
 
 while true; do
    case $1 in
@@ -632,6 +654,10 @@ while true; do
          ;;
       -o|--pass)
          passthrough_opts+=( "$2" )
+         shift
+         ;;
+      -r|--port-start)
+         port_start=$2
          shift
          ;;
       -p)
@@ -736,7 +762,7 @@ if [ -n "$makefile" ]; then
    # Make sure to wait for .ready files to appear. Otherwise, no dependencies
    # would be satisfied!
    unset fast_mode
-   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "$port_start" "${passthrough_opts[@]}"
    exit 0
 fi
 
@@ -773,14 +799,14 @@ if [ -z "$sequential_mode" ] && [ -f "$lab_dir/lab.dep" ] || [ -n "$parallel_mod
    # Use parallel startup if not forced to be sequential and either lab.dep or
    # parallel mode is enabled.
    bold_print "You chose to use parallel startup."
-   lab_start_parallel "$test_delay" "$verbose" "$lab_dir" "${passthrough_opts[@]}"
+   lab_start_parallel "$test_delay" "$verbose" "$lab_dir" "$port_start" "${passthrough_opts[@]}"
 else
    # Use sequential startup
 
    # If lab_vhosts is not empty, then lab_start takes care of starting only the
    # machines listed in lab_vhosts; those appearing in lab_vhosts but that are
    # not part in the lab will simply be skipped.
-   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "${passthrough_opts[@]}"
+   lab_start "$fast_mode" "$test_delay" "$verbose" "$makefile" "$lab_dir" "$port_start" "${passthrough_opts[@]}"
 fi
 
 
