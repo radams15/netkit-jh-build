@@ -251,8 +251,9 @@ EOF
          ip route add default via "$default_route"
       fi
 
-      export -f start_gettys
-      nohup bash -c start_gettys&
+      #export -f start_gettys
+      #nohup bash -c start_gettys&
+      start_gettys
 
       echo "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
       echo
