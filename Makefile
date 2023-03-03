@@ -10,20 +10,22 @@ CORE_DIR=core
 INSTALL_LOCATION ?= $(HOME)/netkit-jh
 
 default: build-kernel build-fs build-core
-	echo 'Done'
+	echo 'Build Complete'
 
 .PHONY: build-kernel
 build-kernel: 
 	$(MAKE) -C $(KERNEL_DIR)
-	echo 'Done'
+	echo 'Completed Kernel Build'
 
 .PHONY: build-fs
 build-fs: 
 	$(MAKE) -C $(FS_DIR)
+	echo 'Completed fs build'
 
 .PHONY: build-core
 build-core: 
 	$(MAKE) -C $(CORE_DIR)
+	echo 'Completed core build'
 
 .PHONY: archives
 archives: $(KERNEL_ARCHIVE_FILE) $(FS_ARCHIVE_FILE) $(CORE_ARCHIVE_FILE)

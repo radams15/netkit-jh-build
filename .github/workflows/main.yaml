@@ -30,12 +30,11 @@ jobs:
              libvdeplug-dev
 
       - name: Build
-        run: |
-          sudo make -j16
+        run: sudo bash -c 'make -j16;echo 1'
       
-      - name: Package
+      - name: Archives
         run: |
-          bash package.sh
+          make archives
 
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest
@@ -43,5 +42,5 @@ jobs:
           repo_token: "${{ secrets.RELEASE_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
-          files: dist/*
+          files: build/*
 
