@@ -79,4 +79,6 @@ $(KERNEL_DIR)/netkit-kernel-$(KERNEL_VERSION): $(BUILD_DIR)/linux-$(KERNEL_VERSI
 	echo "Netkit-JH UML version $(KERNEL_VERSION)" > $(KERNEL_DIR)/netkit-kernel-version
 
 ../$(KERNEL_ARCHIVE_FILE): $(KERNEL_DIR)/netkit-kernel-$(KERNEL_VERSION)
-	cd $(BUILD_DIR)/ ; tar -cvjf ../../$(KERNEL_ARCHIVE_FILE) netkit-jh/
+	cd $(BUILD_DIR)/
+	tar -cvjf ../../$(KERNEL_ARCHIVE_FILE) netkit-jh/
+	echo ""
