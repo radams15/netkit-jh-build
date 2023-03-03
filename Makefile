@@ -15,6 +15,7 @@ default: build-kernel build-fs build-core
 .PHONY: build-kernel
 build-kernel: 
 	$(MAKE) -C $(KERNEL_DIR)
+	echo 'Done'
 
 .PHONY: build-fs
 build-fs: 
