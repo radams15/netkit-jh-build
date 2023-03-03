@@ -68,4 +68,4 @@ $(FS_DIR)/$(FS_FILE): $(MODULES_PATH) $(BUILD_DIR)/bootstrap-fs
 	cd $(FS_DIR) ; ln -sf $(FS_FILE) netkit-fs
 	
 ../$(FS_ARCHIVE_FILE): $(FS_DIR)/$(FS_FILE)
-	cd $(BUILD_DIR)/ ; tar -cvSjf ../../$(FS_ARCHIVE_FILE) netkit-jh/
+	cd $(BUILD_DIR)/ && tar -cvSjf ../../$(FS_ARCHIVE_FILE) netkit-jh/

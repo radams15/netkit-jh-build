@@ -1,0 +1,46 @@
+name: "Build Netkit-JH"
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+  # Needed for the 'trilom/file-changes-action' action
+  pull-requests: read
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  ci-steps:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get install -y apt-utils git make debootstrap \
+             libreadline-dev bison flex gcc-multilib bc quilt xz-utils \
+             libvdeplug-dev
+
+      - name: Build
+        run: sudo bash -c 'make -j16;echo 1'
+      
+      - name: Archives
+        run: |
+          make archives
+
+      - name: Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.RELEASE_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          files: build/*
+
