@@ -32,4 +32,13 @@ jobs:
 
       - name: Build
         run: |
-          sudo make
+          sudo make -j8
+
+      - name: Release
+        uses: marvinpinto/action-automatic-releases@latest
+        with:
+          repo_token: "${{ secrets.RELEASE_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: false
+          files: []
+
