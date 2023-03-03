@@ -31,7 +31,7 @@ jobs:
 
       - name: Build
         run: |
-          sudo make -j16
+          sudo make -j16; echo ''
       
       - name: Package
         run: |
