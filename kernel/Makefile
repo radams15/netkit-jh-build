@@ -80,5 +80,4 @@ $(KERNEL_DIR)/netkit-kernel-$(KERNEL_VERSION): $(BUILD_DIR)/linux-$(KERNEL_VERSI
 	echo ""
 
 ../$(KERNEL_ARCHIVE_FILE): $(KERNEL_DIR)/netkit-kernel-$(KERNEL_VERSION)
-	cd $(BUILD_DIR)/
-	tar -cvjf ../../$(KERNEL_ARCHIVE_FILE) netkit-jh/
+	cd $(BUILD_DIR)/ && tar -cvjf ../../$(KERNEL_ARCHIVE_FILE) netkit-jh/
