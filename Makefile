@@ -10,6 +10,7 @@ CORE_DIR=core
 INSTALL_LOCATION ?= $(HOME)/netkit-jh
 
 default: build-kernel build-fs build-core
+	echo 'Done'
 
 .PHONY: build-kernel
 build-kernel: 
