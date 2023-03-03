@@ -5,7 +5,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
 
 permissions:
   contents: read
@@ -32,7 +31,11 @@ jobs:
 
       - name: Build
         run: |
-          sudo make -j8
+          sudo make -j16
+      
+      - name: Package
+        run: |
+          bash package.sh
 
       - name: Release
         uses: marvinpinto/action-automatic-releases@latest
@@ -40,5 +43,5 @@ jobs:
           repo_token: "${{ secrets.RELEASE_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: false
-          files: []
+          files: dist/*
 

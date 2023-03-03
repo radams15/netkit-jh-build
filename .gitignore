@@ -26,3 +26,4 @@ readyfor.test
 
 # Development artifacts
 .vscode/
+dist/
