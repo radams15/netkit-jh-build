@@ -385,7 +385,7 @@ fi
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$getopt_opts"
 
-VM_CONS=(this none none none none none none none)
+VM_CONS=(none none none none none none none)
 
 while true; do
    case $1 in
@@ -535,7 +535,7 @@ validate_hostnames "$vhost"
 
 
 # Check whether user is trying to attach more than one console to stdin/stdout
-if [ "$VM_CON0" = "this" ] && [ "$VM_CON1" = "this" ]; then
+if [ "${VM_CON0}" = "this" ] && [ "$VM_CON1" = "this" ]; then
    error "only one console can be attached to the current terminal"
    usage 1
 fi
@@ -558,22 +558,31 @@ fi
 
 
 # Check whether the requested terminal emulator application exists
-if [ "$VM_CON0" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$VM_CON0" = "xterm" ] || [ "$VM_CON1" = "xterm" ]; then
-   # Some xterm option arguments are not their relevant executable's name. We
-   # hence map these edge cases here.
-   case $TERM_TYPE in
-      conhost)       term_executable="conhost.exe";;
-      gnome)         term_executable="gnome-terminal";;
-      kitty-tab )    term_executable="kitty";;
-      wt)            term_executable="wt.exe";;
-      *)             term_executable=$TERM_TYPE;;
-   esac
+for con in ${VM_CONS[@]}
+do
+   if [ "${VM_CON0}" = "tmux" ] && [ "$TMUX_OPEN_TERMS" = "yes" ] || [ "$con" = "xterm" ]
+   then
+	   # Some xterm option arguments are not their relevant executable's name. We
+	   # hence map these edge cases here.
+	   case $TERM_TYPE in
+		  conhost)       term_executable="conhost.exe";;
+		  gnome)         term_executable="gnome-terminal";;
+		  kitty-tab )    term_executable="kitty";;
+		  wt)            term_executable="wt.exe";;
+		  *)             term_executable=$TERM_TYPE;;
+	   esac
+	   
+	   echo "term exe: $term_executable!"
 
-   if ! command -v -- "$term_executable" > /dev/null 2>&1; then
-      error "terminal emulator '$term_executable' could not found"
-      exit 1
+	   if ! command -v -- "$term_executable" > /dev/null 2>&1
+	   then
+		  error "terminal emulator '$term_executable' could not found"
+		  exit 1
+	   fi
+	   
+	   break
    fi
-fi
+done
 
 
 ###############################################################################
@@ -584,9 +593,9 @@ fi
 ### BLOCKING SCRIPT ###########################################################
 # The blocking script is a wrapper that forces gnome and tmux to block when
 # invoked.
-if [ "$VM_CON0" = "xterm" ]; then
+if [ "${VM_CON0}" = "xterm" ]; then
    kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "$TERM_TYPE" "$vhost" )
-elif [ "$VM_CON0" = "tmux" ]; then
+elif [ "${VM_CON0}" = "tmux" ]; then
    kernel_cmd=( "$NETKIT_HOME/bin/block-wrapper" "tmux" "$vhost" )
 fi
 
@@ -677,12 +686,11 @@ trap "rm --force -- '$out_file'" EXIT
    ### CONSOLES ###############################################################
    # NOTE: "xterm" maps to "this" for con0 because of the previously used
    # port-helper option.
-   VM_CON0=${VM_CONS[0]}
-   case $VM_CON0 in
+   case ${VM_CON0} in
       none)       kernel_cmd+=( "con0=null" );;
       this|xterm) kernel_cmd+=( "con0=fd:0,fd:1" );;
       pty)        kernel_cmd+=( "con0=pty" );;
-      port:*)     kernel_cmd+=( "con0=$VM_CON0" );;
+      port:*)     kernel_cmd+=( "con0=${VM_CON0}" );;
       # Dummy option used by vinfo to identify machines with a tmux session
       tmux)       kernel_cmd_append+=( "tmux" );;
    esac
@@ -807,7 +815,7 @@ if [ -z "$just_print" ]; then
       exit 1
    fi
 
-   if [ "$VM_CON0" = "tmux" ]; then
+   if [ "${VM_CON0}" = "tmux" ]; then
       # Check if tmux session already exists
       if tmux -L netkit has-session -t "$vhost" > /dev/null 2>&1; then
          error "tmux session already exists for machine '$vhost'; kill with 'vconnect --kill'"
@@ -829,8 +837,15 @@ fi
 
 
 # Background invocation commands if not running directly in the parent terminal
-[ -z "$foreground" ] && [ "$VM_CON0" != "this" ] && [ "$VM_CON1" != "this" ] &&
-   backgrounded=1
+[ -z "$foreground" ] && backgrounded=1
+
+for con in ${VM_CONS[@]}
+do
+   if [ "$con" == "this" ]
+   then
+   	backgrounded=0
+   fi
+done
 
 if [ -n "$verbose" ]; then
    echo "Running ==> ${kernel_cmd[*]}"
@@ -838,7 +853,7 @@ else
    echo "Starting '$vhost'..."
 fi
 
-if [ "$VM_CON0" = "none" ]; then
+if [ "${VM_CON0}" = "none" ]; then
    if [ -n "$backgrounded" ]; then
       run_kernel "${rm_fs:+$fs}" "${kernel_cmd[@]}" > /dev/null 2>&1 &
    else
@@ -854,6 +869,6 @@ fi
 
 
 # Connect to the tmux session if TMUX_OPEN_TERMS is set
-if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "$VM_CON0" = "tmux" ]; then
+if [ "$TMUX_OPEN_TERMS" = "yes" ] && [ "${VM_CON0}" = "tmux" ]; then
     vconnect --terminal --interval 5 --retry-count 20 -- "$vhost" &> /dev/null &
 fi
