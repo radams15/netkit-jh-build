@@ -263,7 +263,6 @@ single_lab_vhost_start() {
    for port_add in $(seq 1 6)
    do
        port=$(($port_start+$port_add))
-       echo "$vhost con$port_add = $port"
        vstart_args+=( "--con$port_add=port:$port" )
    done
 
