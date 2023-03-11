@@ -88,8 +88,16 @@ start_gettys() {
 	do
 			#systemctl unmask getty@tty$i
 			rm -rf /etc/systemd/system/getty@tty$i.service
+			mkdir -p /etc/systemd/system/getty@tty$i.service.d
+			cat >  /etc/systemd/system/getty@tty$i.service.d/override.conf << EOF
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty --autologin root --noclear %I 38400 linux
+EOF
+
 			systemctl start getty@tty$i
 	done
+	systemctl daemon-reload
 }
 
 
