@@ -282,7 +282,7 @@ single_lab_vhost_start() {
       rm --force -- "$lab_dir/$vhost.ready"
    fi
    
-   for port_add in $(seq 1 6)
+   for port_add in $(seq 1 7)
    do
        port=$(($port_start+$port_add))
        echo "$port" > "$HOME/.netkit/machines/$vhost/port.tty$port_add"

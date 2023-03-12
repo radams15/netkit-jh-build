@@ -385,7 +385,7 @@ fi
 # (Safely) set positional parameters to those reordered by getopt
 eval set -- "$getopt_opts"
 
-VM_CONS=(none none none none none none none)
+VM_CONS=(none none none none none none none none)
 
 while true; do
    case $1 in
