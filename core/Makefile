@@ -37,7 +37,7 @@ $(NETKIT_BUILD_DIR)/bin:
 
 # Subdirectory binaries to copy into bin/
 SUBDIR_BINS=$(UML_TOOLS_DIR)/tunctl/tunctl $(UML_TOOLS_DIR)/uml_dump/uml_dump \
-	$(UML_TOOLS_DIR)/uml_mconsole/uml_mconsole $(UML_TOOLS_DIR)/uml_switch/uml_switch
+	$(UML_TOOLS_DIR)/uml_mconsole/uml_mconsole $(UML_TOOLS_DIR)/port-helper/port-helper $(UML_TOOLS_DIR)/uml_switch/uml_switch
 
 $(SUBDIR_BINS):
 	for dir in $(SUBDIRS); do \
