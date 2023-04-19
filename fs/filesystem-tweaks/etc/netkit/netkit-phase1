@@ -83,16 +83,6 @@ umount_host_dir() {
    rmdir -- "$guest_dir"
 }
 
-start_gettys() {
-	for i in 2 3 4 5 6 7
-	do
-			#systemctl unmask getty@tty$i
-			rm -rf /etc/systemd/system/getty@tty$i.service
-			systemctl start getty@tty$i
-	done
-	systemctl daemon-reload
-}
-
 
 SCRIPTNAME=$(basename -- "$0")
 
@@ -252,8 +242,6 @@ EOF
          echo "Configuring default gateway as $default_route"
          ip route add default via "$default_route"
       fi
-
-      start_gettys
 
       echo "$color_bold_blue--- Netkit phase 1 initialization terminated ---$color_normal"
       echo

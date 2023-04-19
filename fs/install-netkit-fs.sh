@@ -113,13 +113,14 @@ chroot -- "$mnt_point" \
       netkit-shutdown.service
 
 # Sort out ttys and auto-logon
-ln \
-   --symbolic \
-   -- \
-   "$mnt_point/lib/systemd/system/getty@.service" \
-   "$mnt_point/etc/systemd/system/getty.target.wants/getty@tty0.service"
-
-chroot -- "$mnt_point" systemctl mask getty-static "getty@tty"{2..6}".service"
+for i in 0 2 3 4 5 6 7
+do
+	ln \
+	   --symbolic \
+	   -- \
+	   "$mnt_point/lib/systemd/system/getty@.service" \
+	   "$mnt_point/etc/systemd/system/getty.target.wants/getty@tty$i.service"
+done
 
 # Map the ctrl-alt-del handler to poweroff. This is so mconsole's cad command
 # functions to safely shutdown machines.
