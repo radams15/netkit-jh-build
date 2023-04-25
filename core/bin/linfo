@@ -114,7 +114,7 @@ lab_map() {
    fi
 
    generate_dot_graph "${lab_confs[@]}" |
-      "$graph_generator" -Tpng -o"$map_file"
+      "$graph_generator" -Tsvg -o"$map_file"
 }
 
 
